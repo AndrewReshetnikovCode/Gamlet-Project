@@ -361,3 +361,54 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Файлы и папки, генерируемые Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+[Uu]ser[Ss]ettings/
+
+# Файлы, связанные с IDE
+.vscode/
+.idea/
+*.csproj
+*.sln
+*.user
+*.userprefs
+
+# Файлы сборок
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Файлы, связанные с JetBrains Rider
+[Aa]ssets/Plugins/Editor/JetBrains*
+
+# Кэш Gradle
+.gradle/
+
+# Файлы, создаваемые Visual Studio
+.vs/
+*.pidb
+*.suo
+*.tmp
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Файлы, создаваемые при отчётах об ошибках Unity
+sysinfo.txt
+
+# Файлы, связанные с Addressables
+[Aa]ssets/AddressableAssetsData/*/*.bin*
+
+# Временные автоматически сгенерированные Android Assets
+[Aa]ssets/StreamingAssets/aa.meta
+[Aa]ssets/StreamingAssets/aa/*

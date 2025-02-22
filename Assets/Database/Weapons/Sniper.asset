@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ebe26dd140a24a4687fff9dfd6b359b, type: 3}
+  m_Name: Sniper
+  m_EditorClassIdentifier: 
+  behaviuor: {fileID: 0}
+  isRail: 1
+  weaponName: Pistol
+  fireRate: 0.2
+  bulletsPerShot: 1
+  recoilStrength: 8
+  maxAmmo: 6
+  reloadTime: 0
+  damage: 10
+  spread: 0.1
+  fireSound: {fileID: 8300000, guid: 2bd832dd7f6d6de40895d25c4212582a, type: 3}

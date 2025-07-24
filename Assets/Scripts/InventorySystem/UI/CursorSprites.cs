@@ -1,6 +1,5 @@
 ﻿using DemiurgEngine.UI.Dragging;
 using InventorySystem;
-using UnityEditorInternal;
 using UnityEngine;
 
 [CreateAssetMenu]

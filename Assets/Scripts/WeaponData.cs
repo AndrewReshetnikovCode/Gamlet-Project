@@ -4,6 +4,11 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "NewWeapon", menuName = "Weapon")]
 public class WeaponData : ScriptableObject
 {
+    public bool ableToAim = true;
+    public bool holeOnHitWall = true;
+    public GameObject particlesOnHitWall;
+    public string reloadAnimTrigger;
+    public int modelChildNum;
     public RecoilData recoilData;
     public WeaponBehaviour behaviuor;
     public bool haveTrail;
@@ -17,7 +22,7 @@ public class WeaponData : ScriptableObject
     public int maxStockAmmo = 120;
     public float reloadTime = 2f;        
     public float damage = 10f;          
-    public float spread = 0.1f;          
+    public float spreadAngle = 0.1f;          
     public AudioClip fireSound;         
 }
 [Serializable]

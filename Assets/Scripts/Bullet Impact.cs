@@ -4,21 +4,20 @@ public class BulletImpact : MonoBehaviour
 {
     public GameObject bulletDecalPrefab; // Префаб следа от пули
     public float decalLifetime = 10f;    // Время жизни следа
-    public new GameObject particleSystemPrefab;
 
-    public void SpawnBulletDecal(RaycastHit hit)
+    public void Execute(RaycastHit hit, bool createHole, GameObject particleSystemPrefab)
     {
-        // Создаем след от пули
+        if (createHole)
+        {
         GameObject decal = Instantiate(bulletDecalPrefab, hit.point, Quaternion.LookRotation(hit.normal));
+            decal.transform.rotation = Quaternion.LookRotation(hit.normal);
+            decal.transform.position += decal.transform.forward * 0.0001f;
 
-        // Поворачиваем decal так, чтобы он был на поверхности
-        decal.transform.rotation = Quaternion.LookRotation(hit.normal);
-        decal.transform.position += decal.transform.forward * 0.0001f; 
-        // Присоединяем decal к поверхности (чтобы след двигался вместе с объектом)
-        decal.transform.SetParent(hit.collider.transform);
+            decal.transform.SetParent(hit.collider.transform);
 
-        // Удаляем decal через некоторое время
-        Destroy(decal, decalLifetime);
+            Destroy(decal, decalLifetime);
+        }
+
 
         if (particleSystemPrefab)
         {

@@ -21,5 +21,9 @@ public class WeaponBehaviour : ScriptableObject
     {
 
     }
+    public virtual void OnShoot()
+    {
+        
+    }
 }
 

@@ -12,20 +12,20 @@ namespace DemiurgEngine.StatSystem
 
         public void SaveGlobalStatsDefaults()
         {
-            _globalStatsDefaultValues.Clear();
-            foreach (Stat stat in globalStats)
-            {
-                Stat defaultStatInstance = Instantiate(stat);
-                defaultStatInstance.SetBaseValue(stat.BaseValue, false);
-                defaultStatInstance.SetCurrentValue(stat.BaseValue, false);
+            //_globalStatsDefaultValues.Clear();
+            //foreach (Stat stat in globalStats)
+            //{
+            //    Stat defaultStatInstance = Instantiate(stat);
+            //    defaultStatInstance.SetBaseValue(stat.BaseValue, false);
+            //    defaultStatInstance.SetCurrentValue(stat.BaseValue, false);
 
-                _globalStatsDefaultValues.Add(defaultStatInstance);
-            }
+            //    _globalStatsDefaultValues.Add(defaultStatInstance);
+            //}
         }
         public void LoadGlobalStatDefaults()
         {
-            stats.Clear();
-            globalStats.AddRange(_globalStatsDefaultValues);
+            //stats.Clear();
+            //globalStats.AddRange(_globalStatsDefaultValues);
         }
         List<Stat> _globalStatsDefaultValues;
     }

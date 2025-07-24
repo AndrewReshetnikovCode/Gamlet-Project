@@ -32,7 +32,11 @@ namespace DemiurgEngine.StatSystem
         }
         State _state;
 
-        public float CurrentValue { get => _state.currentValue; private set { _state.currentValue = Mathf.Clamp(value, 0, BaseValue); } }
+        public float CurrentValue 
+        { 
+            get => _state.currentValue;
+            private set { _state.currentValue = Mathf.Clamp(value, 0, BaseValue); } 
+        }
         public float BaseValue { get => _state.calculatedBaseValue; }
         public float Cap { get => _cap; set => _cap = value; }
         public StatsController Controller => _controller;
@@ -59,6 +63,17 @@ namespace DemiurgEngine.StatSystem
             SetBaseValue(_notCalculatedBaseValue, false);
             SetCurrentValueOnStart();
             _controller = controller;
+        }
+        public virtual void Reset()
+        {
+            if (AssetRef == null)
+            {
+                return;
+            }
+            _modifiers.Clear();
+            _dynamicModifiers.Clear();
+            SetBaseValue(AssetRef._notCalculatedBaseValue, true);
+            SetCurrentValueOnStart();
         }
         public void Override(float value)
         {

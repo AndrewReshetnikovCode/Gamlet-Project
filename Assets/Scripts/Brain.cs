@@ -1,6 +1,7 @@
 using DemiurgEngine.StatSystem;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Burst.CompilerServices;
 using Unity.VisualScripting;
 using Unity.VisualScripting.Antlr3.Runtime;
 using UnityEngine;
@@ -34,7 +35,6 @@ public class Brain : MonoBehaviour
     public float LookDist => _lookDist;
 
     CharacterFacade _character;
-    [SerializeField] StatesCollection _statesCollection;
     [SerializeField] Transform _raycastOrigin;
     [SerializeField] Animator _animator;
     [SerializeField] NavMeshAgentMovement _movement;
@@ -58,7 +58,8 @@ public class Brain : MonoBehaviour
     StateMachine<StateT> _baseSM = new();
     StateMachine<StateT> _fightSM = new();
     [AutoAssignStat] Stat _health;
-    
+
+    [SerializeField] AIMovementSettings _chaseSettings;
     public void Init()
     {
         Context = new BrainContext();
@@ -105,7 +106,7 @@ public class Brain : MonoBehaviour
         //_baseSM.AddTriggerTransitionFromAny("PierceReleased", new Transition<StateT>(default, StateT.idle));
         //_baseSM.AddTriggerTransitionFromAny("Attacked", new Transition<StateT>(default, StateT.fight));
 
-        _baseSM = _statesCollection.GetStateMachine();
+        //_baseSM = _statesCollection.GetStateMachine();
 
         _baseSM.SetStartState(StateT.idle);
         _baseSM.Init();
@@ -248,6 +249,14 @@ public class Brain : MonoBehaviour
             return randomInsideSphere;
         }
     }
+    void Chase()
+    {
+        Vector3 chasePos = Context.TargetTransform.position + Context.TargetTransform.TransformDirection(_chaseSettings.targetOffset);
+    }
+    void GoTo(Vector3 pos)
+    {
+        Character.navMeshMovement.GoTo(pos);
+    }
 }
 public enum StateT
 {
@@ -255,7 +264,7 @@ public enum StateT
     moveToPos,
     flee,
     think,
-    fight,
+    fightMelee,
     chase,
     fightThink,
     strafing,

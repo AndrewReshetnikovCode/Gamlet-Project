@@ -4,17 +4,25 @@ using UnityEngine;
 
 public class ItemDropper : MonoBehaviour
 {
+    public bool randomDir;
     [SerializeField] bool _wasDrop = false;
     [Header("Настройки")]
     public List<ItemEntry> itemsToDrop;
-    public Transform dropPoint;      
+    public Transform dropPointAndDir;
     public float dropForce = 5f;
 
     [Header("Анимация")]
-    public Animator animator;         
+    public Animator animator;
 
     private static readonly int DropTrigger = Animator.StringToHash("Drop");
 
+    void Start()
+    {
+        if (dropPointAndDir == null)
+        {
+            dropPointAndDir = transform;
+        }
+    }
     /// <summary>
     /// Метод для запуска выпадения предметов.
     /// </summary>
@@ -43,10 +51,8 @@ public class ItemDropper : MonoBehaviour
     {
         foreach (var item in itemsToDrop)
         {
-            for (int i = 0; i < item.quantity; i++)
-            {
-                SpawnItem(item);
-            }
+            SpawnItem(item);
+
         }
     }
 
@@ -56,25 +62,19 @@ public class ItemDropper : MonoBehaviour
     /// <param name="item">Данные о предмете.</param>
     private void SpawnItem(ItemEntry item)
     {
-        if (item.item.Prefab == null)
+        Vector3 dir;
+        if (randomDir)
         {
-            Debug.LogWarning($"Префаб для предмета {item.item} не назначен!");
-            return;
+            dir = new Vector3();
+            dir.x = Random.Range(-1f, 1f);
+            dir.z = Random.Range(-1f, 1f);
         }
-
-        // Создаем объект предмета
-        WorldItemController spawnedItem = Instantiate(item.item.Prefab, dropPoint.position, Quaternion.identity);
-        
-        // Добавляем разброс
-        Rigidbody rb = spawnedItem.GetComponent<Rigidbody>();
-        if (rb)
+        else
         {
-            Vector3 force = new Vector3(
-                Random.Range(-1f, 1f),
-                1f,   
-                Random.Range(-1f, 1f)
-            ).normalized * dropForce;
-            rb.AddForce(force, ForceMode.Impulse);
+            dir = dropPointAndDir.forward;
+            dir.y = 0;
         }
+        Instantiate(item.item.Prefab, dropPointAndDir.position + Vector3.up, Quaternion.LookRotation(dir)).GetComponentInChildren<WorldItemController>().ItemEntry = item;
+        //ItemDropUtil.Drop(dropPointAndDir.position, force, item);
     }
 }

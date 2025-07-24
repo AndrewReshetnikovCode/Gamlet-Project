@@ -11,9 +11,8 @@ public static class StatLinkFiller
 
         foreach (var component in components)
         {
-            foreach (var field in StatFields(component))
+            foreach (var field in GetStatFields(component))
             {
-
                 var stat = field.GetValue(component) as Stat;
                 
                 var statName = field.Name;
@@ -24,8 +23,12 @@ public static class StatLinkFiller
             }
         }
     }
-    static FieldInfo[] StatFields(MonoBehaviour component)
+    static FieldInfo[] GetStatFields(MonoBehaviour component)
     {
+        if (component == null)
+        {
+            Debug.Log("Component null!");
+        }
         var allFields = component.GetType().GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
         List<FieldInfo> statFields = new(allFields.Length);
         foreach (var field in allFields)

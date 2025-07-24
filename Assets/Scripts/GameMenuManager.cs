@@ -1,27 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class GameMenuManager : MonoBehaviour
-    {
+{
     [SerializeField] KeyCode _enableKey;
     [SerializeField] KeyCode _disableKey;
-    [SerializeField] GameObject _gameMenu;
+    [SerializeField] UIInventoryManager _gameMenu;
     private void Update()
     {
-        if (Input.GetKeyDown(_enableKey))
+        if (Input.GetKeyDown(_enableKey) && _gameMenu.Enabled == false)
         {
-            _gameMenu.SetActive(true);
+            _gameMenu.SetTraderWindowActive(false);
+            _gameMenu.Display(true);
 
-            PlayerManager.Instance.CursorLocked = false;
+            PlayerManager.Instance.OpenInventory(false);
         }
-        if (Input.GetKeyDown(_disableKey)) {
-            _gameMenu.SetActive(false);
+        if (Input.GetKeyDown(_disableKey))
+        {
+            _gameMenu.Display(false);
 
-            PlayerManager.Instance.CursorLocked = true;
+            PlayerManager.Instance.CloseInventory();
         }
     }
 }

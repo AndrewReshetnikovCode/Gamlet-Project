@@ -8,11 +8,11 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Upgrades/DoubleJump", fileName = "DoubleJump")]
 public class DoubleJump : Upgrade
 {
-    protected override void OnActivate(UpgradeController controller)
+    protected override void OnActivate(UpgradesController controller)
     {
         controller.character.GetComponent<PlayerMovement>().DoubleJump = true;
     }
-    protected override void OnDeactivate(UpgradeController controller)
+    protected override void OnDeactivate(UpgradesController controller)
     {
         controller.character.GetComponent<PlayerMovement>().DoubleJump = false;
     }

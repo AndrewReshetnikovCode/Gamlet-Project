@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityHFSM;
 
 //[CreateAssetMenu(menuName ="State/FightState")]
-public class FightState : AIState
+public class FightState : AIStateSettings
 {
     Vector3 _targetPos;
     Transform _targetTransform;

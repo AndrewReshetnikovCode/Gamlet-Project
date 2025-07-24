@@ -7,11 +7,11 @@ using UnityEngine;
 public class FireBulletsUpgrade : Upgrade
 {
     [SerializeField] IgnitionHandler _h;
-    protected override void OnActivate(UpgradeController c)
+    protected override void OnActivate(UpgradesController c)
     {
         c.character.shooting.AddHandler(_h);
     }
-    protected override void OnDeactivate(UpgradeController c)
+    protected override void OnDeactivate(UpgradesController c)
     {
         c.character.shooting.RemoveHandler(_h);
     }

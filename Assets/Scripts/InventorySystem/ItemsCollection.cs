@@ -74,7 +74,8 @@ namespace InventorySystem
             Remove(Array.IndexOf(_itemEntries, itemEntry));
             return true;
         }
-        public void Reduce(int itemIndex, int reduceAmount)
+        /// <returns>был ли предмет удален</returns>
+        public bool Reduce(int itemIndex, int reduceAmount)
         {
             ItemEntry e = _itemEntries[itemIndex];
             int newQuantity = reduceAmount >= e.quantity ? 0 : e.quantity - reduceAmount;
@@ -84,7 +85,9 @@ namespace InventorySystem
             if (RemoveWhenQuantityZero && newQuantity == 0)
             {
                 Remove(e);
+                return true;
             }
+            return false;
         }
         public ItemEntry GetItemAt(int num)
         {

@@ -12,23 +12,24 @@ public class ShootingUI : MonoBehaviour
         if (_controller == null)
         {
             _controller = GameObject.FindObjectOfType<ShootingController>();
-            _controller.onHit += OnHit;
         }
+        _controller.onHit += OnHit;
     }
     void Update()
     {
-        _ammoCount.text = _controller.CurrentWeaponState.loadedAmmo.ToString() + "/" + _controller.CurrentWeaponState.stockAmmo.ToString();
+        string stockAmmoText = _controller.CurrentWeaponState.stockAmmo == -1 ? "∞" : _controller.CurrentWeaponState.stockAmmo.ToString();
+        _ammoCount.text = _controller.CurrentWeaponState.loadedAmmo.ToString() + "/" + stockAmmoText;
     }
     void OnHit(float healthPercent)
     {
-        if (healthPercent > 0.6f) 
+        if (healthPercent > 0.6f)
             _hitMark.currentMarks = 1;
-        else if(healthPercent > 0f)
+        else if (healthPercent > 0f)
             _hitMark.currentMarks = 2;
         else
             _hitMark.currentMarks = 3;
         _hitMark.Display();
 
-        
+
     }
 }

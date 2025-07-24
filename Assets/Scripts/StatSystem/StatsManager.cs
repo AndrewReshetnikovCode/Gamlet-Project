@@ -10,39 +10,30 @@ namespace Assets.StatSystem
         {
             get
             {
-                if (_instance == null)
-                {
-                    GameObject go = new();
-                    go.name = nameof(StatsManager);
-                    go.AddComponent<StatsManager>();
                     return _instance;
-                }
-                else
-                {
-                    return _instance;
-                }
-
             }
         }
         static StatsManager _instance;
         [SerializeField] StatsDatabase _database;
         List<StatsController> _statsControllers = new();
-        bool _isActive = false;
         private void Awake()
         {
             _instance = this;
         }
         void Start()
         {
-            StatsManager founded = GameObject.FindObjectOfType<StatsManager>();
-            if (founded != null && founded != this)
+            StatsManager foundedStatsManager = GameObject.FindObjectOfType<StatsManager>();
+            StatsController[] foundedStatsControllerArray = GameObject.FindObjectsByType<StatsController>(FindObjectsSortMode.None);
+            StatView[] foundedStatViewArray = GameObject.FindObjectsOfType<StatView>(true);
+            List<Stat> allStats = new();
+
+            if (foundedStatsManager != null && foundedStatsManager != this)
             {
                 Destroy(gameObject);
                 return;
             }
 
-            StatsController[] foundedSC = GameObject.FindObjectsByType<StatsController>(FindObjectsSortMode.None);
-            foreach (var item in foundedSC)
+            foreach (var item in foundedStatsControllerArray)
             {
                 if (_statsControllers.Contains(item) == false)
                 {
@@ -50,13 +41,6 @@ namespace Assets.StatSystem
                 }
             }
 
-            StatView[] foundedSV = GameObject.FindObjectsByType<StatView>(FindObjectsSortMode.None);
-            foreach (var item in foundedSV)
-            {
-                item.Init();
-            }
-
-            List<Stat> allStats = new();
             foreach (var sc in _statsControllers)
             {
                 for (int i = 0; i < sc.StatsCount; i++)
@@ -64,27 +48,24 @@ namespace Assets.StatSystem
                     allStats.Add(sc.GetStat(i));
                 }
             }
+
             foreach (var item in _statsControllers)
+            {
+                item.Init();
+            }
+
+            foreach (var item in foundedStatViewArray)
             {
                 item.Init();
             }
 
             if (_database != null)
             {
-            GlobalStats.Init(allStats, _database.globalStats);
-            _database.SaveGlobalStatsDefaults();
-
+                GlobalStats.Init(allStats, _database.globalStats);
+                _database.SaveGlobalStatsDefaults();
             }
 
             DontDestroyOnLoad(gameObject);
-            _isActive = true;
-        }
-        private void OnDestroy()
-        {
-            if (_isActive)
-            {
-            _database.LoadGlobalStatDefaults();
-            }
         }
         public void OnStatsControllerStarted(StatsController sc)
         {

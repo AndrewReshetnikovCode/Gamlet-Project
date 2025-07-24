@@ -13,23 +13,33 @@ public class CharacterFacade : MonoBehaviour
     public ItemsCollection itemsCollection;
     public HealthController health;
     public DeathController death;
-    public UpgradeController upgrade;
+    public UpgradesController upgrades;
     public Brain brain;
     public NavMeshAgentMovement navMeshMovement;
     public CharacterRow row;
     public Spawner spawner;
     public Rigidbody rb;
-    public VisualEffectController visualEffect;
+    public VisualEffectsController visualEffect;
     public ShootingController shooting;
     public Animator animator;
+    public ScreenAnimationManager screenAnim;
 
-    public Transform mainTransform;
+    public Transform rootTransform;
 
     float _rtp;
+
     public float RangeToPlayer => _rtp;
 
+    public Transform RootTransform
+    {
+        get => rootTransform;
+    }
     [AutoAssignStat] Stat _money;
     [AutoAssignStat] Stat _blood;
+
+    bool _inited = false;
+
+    CharactersCollection _collection;
     private void Awake()
     {
         if (stats == null)
@@ -44,41 +54,70 @@ public class CharacterFacade : MonoBehaviour
             navMeshMovement = GetComponent<NavMeshAgentMovement>();
         if (rb == null)
             rb = GetComponent<Rigidbody>();
-        if (upgrade == null)
-            upgrade = GetComponent<UpgradeController>();
+        if (upgrades == null)
+            upgrades = GetComponent<UpgradesController>();
         if (visualEffect == null)
-            visualEffect = GetComponent<VisualEffectController>();
+            visualEffect = GetComponent<VisualEffectsController>();
         if (shooting == null)
             shooting = GetComponent<ShootingController>();
         if (animator == null)
             animator = GetComponent<Animator>();
-        if (mainTransform == null)
-            mainTransform = transform;
+        if (rootTransform == null)
+            rootTransform = transform;
         if (itemsCollection == null)
             itemsCollection = GetComponent<ItemsCollection>();
+        if (screenAnim == null)
+            screenAnim = GetComponent<ScreenAnimationManager>();
     }
     private void Start()
     {
-        CharacterManager.Instance.OnCharacterInit(this);
+        InitComponents();
+        
+
+        _inited = true;
     }
     private void Update()
     {
-        _rtp = Vector3.Distance(GetMainTransform().position,PlayerManager.Instance.Player.transform.position);
+        _rtp = Vector3.Distance(RootTransform().position, PlayerManager.Instance.Player.transform.position);
     }
-    public void Init()
+    private void OnDestroy()
+    {
+        _collection.Remove(this);
+    }
+    public void Init(CharactersCollection collection)
+    {
+        _collection = collection;
+    }
+    public void ResetValues()
+    {
+        if (_inited)
+        {
+            stats.Reset();
+        }
+    }
+    public void InitComponents()
     {
         stats?.Init();
         health?.Init();
         brain?.Init();
+        if (tag == "Player")
+        {
+            screenAnim.Init();
+        }
+        upgrades?.Init();
     }
-
+    public void ApplyBulletDamage(DamageInfo damageInfo)
+    {
+        visualEffect?.CreateParticle(damageInfo.point, -damageInfo.dir, 1, ParticleType.Blood);
+        ApplyDamage(damageInfo.appliedDamage, damageInfo.source);
+    }
     public void ApplyDamage(float v, object s)
     {
         health.ApplyDamage(v, s);
     }
     public void BindToSpawner(Spawner spawner)
     {
-
+        this.spawner = spawner;
     }
     public void OnEnterFight()
     {
@@ -87,10 +126,6 @@ public class CharacterFacade : MonoBehaviour
     public void OnExitFight()
     {
         onExitFight?.Invoke();
-    }
-    public Transform GetMainTransform()
-    {
-        return mainTransform;
     }
     public void StopMoving()
     {
@@ -109,7 +144,7 @@ public class CharacterFacade : MonoBehaviour
     }
     public void AddCurrency(CurrencyType type, int amount)
     {
-        if(type == CurrencyType.Money)
+        if (type == CurrencyType.Money)
         {
             _money.AddBaseValue(amount, true);
         }
@@ -119,8 +154,4 @@ public class CharacterFacade : MonoBehaviour
         }
     }
 }
-public enum CurrencyType
-{
-    Money,
-    Blood
-}
+

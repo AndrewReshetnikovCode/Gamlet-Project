@@ -97,6 +97,6 @@ public class TreeClimbingController : MonoBehaviour
     }
     private float CalculateVerticalProgress()
     {
-        return (_character.GetMainTransform().position.y - _minPoint.position.y) / (_maxPoint.position.y - _minPoint.position.y);
+        return (_character.RootTransform.position.y - _minPoint.position.y) / (_maxPoint.position.y - _minPoint.position.y);
     }
 }

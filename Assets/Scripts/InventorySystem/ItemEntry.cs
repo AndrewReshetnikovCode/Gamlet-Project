@@ -7,12 +7,10 @@ namespace InventorySystem
         public Item item;
         public int quantity;
 
-        public bool InWorld => worldObject != null;
-        public WorldItemController worldObject;
 
         public ItemEntry Clone()
         {
-            return new ItemEntry() { item = item, quantity = quantity, worldObject = null };
+            return new ItemEntry() { item = item, quantity = quantity };
         }
     }
 

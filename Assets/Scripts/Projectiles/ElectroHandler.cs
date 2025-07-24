@@ -8,7 +8,7 @@ public class ElectroHandler : ProjectileHandler
     {
         if (info.reciever != null)
         {
-            info.reciever.upgrade.AddUpgrade(_stun);
+            info.reciever.upgrades.AddUpgrade(_stun);
         }
     }
 }

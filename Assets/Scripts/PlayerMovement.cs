@@ -1,67 +1,77 @@
+using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
 public class PlayerMovement : MonoBehaviour
 {
-    public float moveSpeed = 5f; // Скорость перемещения
-    public float jumpForce = 8f; // Сила прыжка
-    public float gravity = -9.8f; // Гравитация
-    public float slopeLimit = 45f; // Максимальный угол наклона для скольжения
-    public bool DoubleJump = false; // Флаг для активации двойного прыжка
+    const float MAX_FALL_SPEED = 1000f;
 
-    private CharacterController characterController;
-    private Vector3 velocity;
-    private bool isGrounded;
-    private bool canDoubleJump; // Флаг для проверки возможности второго прыжка
+    public float moveSpeed = 5f;
+    public float jumpForce = 8f;
+    public float gravity = -9.8f;
+    public float slopeLimit = 45f;
+    public bool DoubleJump = false;
+
+    [Header("OnGetDamage")]
+    public bool slow;
+    public float duration;
+    public float percent;
+
+    float _baseSpeed;
+    CharacterController _characterController;
+    Vector3 _velocity;
+    Vector3 _inputMove;
+    bool _inputJump;
+    bool _isGrounded;
+    bool _canDoubleJump;
 
     void Start()
     {
-        characterController = GetComponent<CharacterController>();
-        characterController.slopeLimit = slopeLimit;
+        _characterController = GetComponent<CharacterController>();
+        _characterController.slopeLimit = slopeLimit;
+
+        _baseSpeed = moveSpeed;
+
+        GetComponent<CharacterFacade>().health.onDamageApplied += (v, s) => SetSlow();
     }
 
     void Update()
     {
-        // Проверяем, на земле ли персонаж
-        isGrounded = characterController.isGrounded;
+        HandleInput();
 
-        if (isGrounded && velocity.y < 0)
+        _isGrounded = _characterController.isGrounded;
+
+        if (_isGrounded && _velocity.y < 0)
         {
-            velocity.y = -2f; // Небольшое "прижатие" к земле
-            canDoubleJump = true; // Сбрасываем возможность двойного прыжка
+            _velocity.y = -2f; // Небольшое "прижатие" к земле
+            _canDoubleJump = true;
         }
 
-        // Управление движением по плоскости
-        float moveX = Input.GetAxis("Horizontal");
-        float moveZ = Input.GetAxis("Vertical");
-        Vector3 move = transform.right * moveX + transform.forward * moveZ;
+        _characterController.Move(_inputMove * moveSpeed * Time.deltaTime);
 
-        characterController.Move(move * moveSpeed * Time.deltaTime);
-
-        // Прыжок
-        if (Input.GetButtonDown("Jump"))
+        if (_inputJump)
         {
-            if (isGrounded)
+            if (_isGrounded)
             {
-                velocity.y = jumpForce; // Первый прыжок
+                _velocity.y = jumpForce; // Первый прыжок
             }
-            else if (DoubleJump && canDoubleJump)
+            else if (DoubleJump && _canDoubleJump)
             {
-                velocity.y = jumpForce; // Двойной прыжок
-                canDoubleJump = false; // Запрещаем второй прыжок до следующего приземления
+                _velocity.y = jumpForce; // Двойной прыжок
+                _canDoubleJump = false; // Запрещаем второй прыжок до следующего приземления
             }
         }
 
-        // Применение гравитации
-        velocity.y += gravity * Time.deltaTime;
-        if (velocity.y > 1000)
+        //Применение гравитации
+        _velocity.y += gravity * Time.deltaTime;
+        if (_velocity.y > MAX_FALL_SPEED)
         {
-            velocity.y = 1000;
+            _velocity.y = MAX_FALL_SPEED;
         }
-        characterController.Move(velocity * Time.deltaTime);
+        _characterController.Move(_velocity * Time.deltaTime);
 
-        // Удержание скольжения с наклонных поверхностей
-        if (isGrounded && move == Vector3.zero)
+        //Скольжение
+        if (_isGrounded && _inputMove == Vector3.zero)
         {
             if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, 1.5f))
             {
@@ -69,9 +79,47 @@ public class PlayerMovement : MonoBehaviour
                 if (slopeAngle > slopeLimit)
                 {
                     var slideDirection = Vector3.Cross(hit.normal, Vector3.up);
-                    characterController.Move(slideDirection);
+                    _characterController.Move(slideDirection);
                 }
             }
+        }
+    }
+    void HandleInput()
+    {
+        float moveX = Input.GetAxis("Horizontal");
+        float moveZ = Input.GetAxis("Vertical");
+        _inputMove = transform.right * moveX + transform.forward * moveZ;
+        _inputMove = _inputMove.normalized;
+
+        _inputJump = Input.GetButtonDown("Jump");
+    }
+    void SetSlow()
+    {
+        if (slow)
+        {
+            StopAllCoroutines();
+            ResetSpeed();
+            StartCoroutine(InterpolateSpeed());
+        }
+    }
+    void ResetSpeed()
+    {
+        moveSpeed = _baseSpeed;
+    }
+    IEnumerator InterpolateSpeed()
+    {
+        float elapsed = 0;
+        float slowedSpeed = moveSpeed * percent;
+        float normalSpeed = moveSpeed;
+
+
+        while (elapsed < duration)
+        {
+            moveSpeed = Mathf.Lerp(slowedSpeed, normalSpeed, elapsed / duration);
+
+            elapsed += Time.deltaTime;
+
+            yield return null;
         }
     }
 }

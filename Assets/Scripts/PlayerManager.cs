@@ -28,19 +28,41 @@ public class PlayerManager : MonoBehaviour
 
         }
     }
-    static PlayerManager _instance;
-    [SerializeField] GameObject _player;
 
     public GameObject Player { get => _player; set => _player = value; }
-    bool _ts;
     public bool TrueSightActive { get => _ts; set { if (value != _ts) onTrueSightChange?.Invoke(value); _ts = value; } }
-    Stat _trueSightRange => Character.stats.GetStat("TSRange");
     public float TrueSightRange => _trueSightRange.BaseValue;
     public CharacterFacade Character { get; private set; }
-    public static CharacterFacade StCharacter => Instance.Character;
+    public static CharacterFacade CharacterStatic => Instance.Character;
+    public bool CursorControl 
+    {   
+        get => _cl; 
+        set 
+        { 
+            _cl = value; 
+            Cursor.visible = value; 
+            Character.shooting.enabled = !value; 
+            _cameraRotation.enabled = !value;
+            _aim.enabled = !value;
+            Cursor.lockState = value ? CursorLockMode.Confined : CursorLockMode.Locked; 
+        } 
+    }
+    public bool MovementLocked 
+    { 
+        get => !_movement.enabled; 
+        set => _movement.enabled = !value; 
+    }
+
+    static PlayerManager _instance;
+    [SerializeField] GameObject _player;
+    [SerializeField] UIInventoryManager _inventoryManager;
+    [SerializeField] PlayerMovement _movement;
+    [SerializeField] PlayerCamera _cameraRotation;
+    [SerializeField] AimFovController _aim;
+    Stat _trueSightRange => Character.stats.GetStat("TSRange");
+    bool _ts;
     bool _timeScaptApplied = false;
     bool _cl;
-    public bool CursorLocked { get => _cl; set { _cl = value; Cursor.visible = !value; Character.shooting.enabled = value; Camera.main.GetComponentInParent<PlayerCamera>().enabled = value; Cursor.lockState = value ? CursorLockMode.Locked:CursorLockMode.Confined; } }
     void Awake()
     {
         _instance = this;
@@ -67,6 +89,21 @@ public class PlayerManager : MonoBehaviour
         {
             StartCoroutine(RevertTimeScaleRoutine(revertDelay * scale));
         }
+    }
+    public void OpenInventory(bool withTrader)
+    {
+        CursorControl = true;
+        MovementLocked = true;
+
+        _inventoryManager.SetTraderWindowActive(withTrader);
+        _inventoryManager.Display(true);
+    }
+    public void CloseInventory()
+    {
+        CursorControl = false;
+        MovementLocked = false;
+
+        _inventoryManager.Display(false);
     }
     IEnumerator RevertTimeScaleRoutine(float delay)
     {

@@ -1,19 +1,19 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.TextCore.Text;
 
 
 public class OilController : MonoBehaviour
 {
     public LayerMask characterLayer;
     public LayerMask projLayer;
-    public List<GameObject> sprites;
+    [SerializeField] GameObject _mainObject;
+    [SerializeField] GameObject _spriteContainer;
     [SerializeField] IgnitionUpgrade _ignition;
     [SerializeField] List<CharacterFacade> _charsInZone = new();
     [SerializeField] float _tickTime = .1f;
     [SerializeField] float _damage = 10f;
-    [SerializeField] float _selfDestroyDelay = 130f;
-    [SerializeField] float _fireTime = 10f;
+    [SerializeField] float _lifetime = 1000f;
+    [SerializeField] float _lifetimeAfterIgnition = 10f;
 
     float _lastTick;
     bool _isFired = false;
@@ -23,11 +23,11 @@ public class OilController : MonoBehaviour
     private void Start()
     {
         _collider = GetComponent<BoxCollider>();
-        Invoke(nameof(SelfDestroy), _selfDestroyDelay);
+        Invoke(nameof(SelfDestroy), _lifetime);
     }
     void SelfDestroy()
     {
-        Destroy(gameObject);
+        Destroy(_mainObject);
     }
     private void OnTriggerEnter(Collider other)
     {
@@ -35,7 +35,7 @@ public class OilController : MonoBehaviour
         {
             FireUp();
         }
-        else if(LayerUtil.IsLayerInMask(other.gameObject.layer, characterLayer))
+        else if (LayerUtil.IsLayerInMask(other.gameObject.layer, characterLayer))
         {
             CharacterFacade c = other.GetComponentInParent<CharacterFacade>();
             _charsInZone.Add(c);
@@ -52,7 +52,7 @@ public class OilController : MonoBehaviour
     }
     private void OnTriggerExit(Collider other)
     {
-        if (LayerUtil.IsLayerInMask(other.gameObject.layer,characterLayer))
+        if (LayerUtil.IsLayerInMask(other.gameObject.layer, characterLayer))
         {
             _charsInZone.Remove(other.GetComponentInParent<CharacterFacade>());
 
@@ -66,28 +66,27 @@ public class OilController : MonoBehaviour
             return;
         }
         _isFired = true;
-        foreach (GameObject s in sprites)
-        {
-            s.SetActive(true);
-        }
+
+        _spriteContainer.SetActive(true);
+
         foreach (var item in _charsInZone)
         {
-            item.upgrade.AddUpgrade(_ignition);
+            item.upgrades.AddUpgrade(_ignition);
         }
-        Invoke(nameof(SelfDestroy), _fireTime);
+        Invoke(nameof(SelfDestroy), _lifetimeAfterIgnition);
     }
     public void OnNavAgentEnter(object o)
     {
         MonoBehaviour mb = o as MonoBehaviour;
         if (mb)
         {
-            CharacterFacade character;
-            if(mb.TryGetComponent<CharacterFacade>(out character))
+            CharacterFacade c;
+            if (mb.TryGetComponent<CharacterFacade>(out c))
             {
-                _charsInZone.Add(character);
-                CharacterEntersOil(character);
+                _charsInZone.Add(c);
+                CharacterEntersOil(c);
             }
-        } 
+        }
     }
     public void OnNavAgentExit(object o)
     {
@@ -105,7 +104,7 @@ public class OilController : MonoBehaviour
     {
         if (_isFired)
         {
-            c.upgrade.AddUpgrade(_ignition);
+            c.upgrades.AddUpgrade(_ignition);
         }
     }
     void Tick()

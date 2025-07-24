@@ -9,30 +9,27 @@ public class Upgrade : ScriptableObject
     public Sprite icon;
 
     [Header("Upgrade Progression")]
-    public Upgrade strongerVersion; // Ссылка на усиленную версию
+    public Upgrade strongerVersion;
 
     [Header("Timing")]
     public float tickInterval = 1f;
 
-    // Методы, которые можно переопределить
-    protected virtual void OnActivate(UpgradeController controller) { }
-    protected virtual void OnTick(UpgradeController controller) { }
-    protected virtual void OnDeactivate(UpgradeController controller) { }
+    protected virtual void OnActivate(UpgradesController controller) { }
+    protected virtual void OnTick(UpgradesController controller) { }
+    protected virtual void OnDeactivate(UpgradesController controller) { }
+    protected virtual void OnCharacterDeath(UpgradesController controller) { }
 
-    // Активировать апгрейд
-    public void Activate(UpgradeController controller)
+    public void Activate(UpgradesController controller)
     {
         OnActivate(controller);
     }
 
-    // Вызывать на каждом обновлении
-    public void Tick(UpgradeController controller)
+    public void Tick(UpgradesController controller)
     {
         OnTick(controller);
     }
 
-    // Деактивировать апгрейд
-    public void Deactivate(UpgradeController controller)
+    public void Deactivate(UpgradesController controller)
     {
         OnDeactivate(controller);
     }

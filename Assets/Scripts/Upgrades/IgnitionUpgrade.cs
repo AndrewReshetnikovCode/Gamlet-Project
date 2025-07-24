@@ -3,23 +3,21 @@ using UnityEngine;
 
 [CreateAssetMenu(menuName = "Upgrades/Ignition", fileName = "Ignition")]
 
-public class IgnitionUpgrade : TemporaryUpgrade
+public class IgnitionUpgrade : Upgrade
 {
     public float damage;
-    protected override void OnActivate(UpgradeController controller)
+    protected override void OnActivate(UpgradesController controller)
     {
-        controller.character.visualEffect.ActivateBurn(true);
+
     }
-    protected override void OnTick(UpgradeController controller)
+    protected override void OnTick(UpgradesController controller)
     {
         base.OnTick(controller);
         controller.character.ApplyDamage(damage, this);
         
     }
-    protected override void OnDeactivate(UpgradeController controller)
+    protected override void OnDeactivate(UpgradesController controller)
     {
-        controller.character.visualEffect.ActivateBurn(false);
-        //HACK
-        controller.character.upgrade.upgradesOnTickActions.Remove(this);
+        
     }
 }

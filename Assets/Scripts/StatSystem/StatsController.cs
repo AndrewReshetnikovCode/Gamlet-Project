@@ -40,6 +40,14 @@ namespace DemiurgEngine.StatSystem
             //GameObjectRuntimeInitializer.RemoveStatsController(this);
             StatsManager.Instance.OnStatsControllerDestroyed(this);
         }
+        public void Reset()
+        {
+            foreach (var item in _stats)
+            {
+                item.Reset();
+            }
+            WriteStartOverrides();
+        }
 
         public void Init()
         {
@@ -59,6 +67,14 @@ namespace DemiurgEngine.StatSystem
                 _stats[i].Init(this, statsOrigins[i]);
             }
 
+            WriteStartOverrides();
+
+            StatLinkFiller.InitializeStats(gameObject, this);
+
+            _initialized = true;
+        }
+        void WriteStartOverrides()
+        {
             for (int i = 0; i < _overridesOnStart.Count; i++)
             {
                 Stat s = _stats.Find(s => _overridesOnStart[i].stat == s.AssetRef);
@@ -70,12 +86,7 @@ namespace DemiurgEngine.StatSystem
                 s.Override(_overridesOnStart[i].baseValue);
                 s.SetCurrentValue(_overridesOnStart[i].currentValue, true);
             }
-
-            StatLinkFiller.InitializeStats(gameObject, this);
-
-            _initialized = true;
         }
-
         public Stat GetStat(Stat stat)
         {
             return GetStat(stat.name);

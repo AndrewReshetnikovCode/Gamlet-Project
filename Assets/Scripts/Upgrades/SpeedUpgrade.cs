@@ -5,11 +5,11 @@ using UnityEngine;
 public class SpeedUpgrade : Upgrade
     {
     public float speedMult;
-    protected override void OnActivate(UpgradeController controller)
+    protected override void OnActivate(UpgradesController controller)
     {
         controller.GetComponent<CharacterFacade>().GetComponentInParent<PlayerMovement>().moveSpeed *= speedMult;
     }
-    protected override void OnDeactivate(UpgradeController controller)
+    protected override void OnDeactivate(UpgradesController controller)
     {
         controller.GetComponent<CharacterFacade>().GetComponentInParent<PlayerMovement>().moveSpeed /= speedMult;
     }

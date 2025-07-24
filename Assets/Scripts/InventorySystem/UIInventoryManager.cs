@@ -7,18 +7,20 @@ public class UIInventoryManager : MonoBehaviour
 {
     public static UIInventoryManager instance;
 
+    public bool Enabled => _mainContainer.gameObject.activeSelf;
+
     [SerializeField] ItemsCollection _playerItemsCollection;
     [SerializeField] ItemsCollection _playerEquipCollection;
     [SerializeField] ItemsCollection _playerSymbolCollection;
     [SerializeField] ItemsCollection _traderCollection;
     [SerializeField] Transform _playerInventroyContainer;
+    [SerializeField] RectTransform _mainContainer;
+    [SerializeField] RectTransform _traderWindow;
 
     protected UIDragHandler _dragHandler;
 
     protected ItemEntry _draggedItem;
     protected RectTransform _draggedImage;
-
-
 
     public ItemsCollection Collection { get => _playerItemsCollection; set => _playerItemsCollection = value; }
 
@@ -30,9 +32,18 @@ public class UIInventoryManager : MonoBehaviour
     {
         _dragHandler = UIDragHandler.Instance;
 
-
         _dragHandler.onStartDrag += OnDragStarted;
         _dragHandler.onEndDrag += OnDragEnd;
+        
+    }
+
+    public void Display(bool value)
+    {
+        _mainContainer.gameObject.SetActive(value);
+    }
+    public void SetTraderWindowActive(bool value)
+    {
+        _traderWindow.gameObject.SetActive(value);
     }
     protected virtual void OnDragStarted(DragEventInfo e)
     {
@@ -68,7 +79,7 @@ public class UIInventoryManager : MonoBehaviour
             }
             if (AbleToBuyItem(i.item))
             {
-                PlayerManager.StCharacter.AddCurrency(i.item.currencyType, -i.item.price);
+                PlayerManager.CharacterStatic.AddCurrency(i.item.currencyType, -i.item.price);
 
                 _dragHandler.SetDraggedItem(i);
                 _dragHandler.SetDraggedSprite(i.item.Sprite);
@@ -88,9 +99,9 @@ public class UIInventoryManager : MonoBehaviour
             _dragHandler.SetDraggedSprite(i.item.Sprite);
             _playerEquipCollection.Remove(i);
 
-            if (item.upgrade != null && PlayerManager.StCharacter.upgrade.HasUpgrade(item.upgrade))
+            if (item.upgrade != null && PlayerManager.CharacterStatic.upgrades.HasUpgrade(item.upgrade))
             {
-                PlayerManager.StCharacter.upgrade.RemoveUpgrade(item.upgrade);
+                PlayerManager.CharacterStatic.upgrades.RemoveUpgrade(item.upgrade);
 
             }
         }
@@ -108,9 +119,9 @@ public class UIInventoryManager : MonoBehaviour
             _dragHandler.SetDraggedSprite(_playerSymbolCollection[e.slotUnderCursorNum].item.Sprite);
             _playerSymbolCollection.Remove(e.slotUnderCursorNum);
 
-            if (item.upgrade != null && PlayerManager.StCharacter.upgrade.HasUpgrade(item.upgrade))
+            if (item.upgrade != null && PlayerManager.CharacterStatic.upgrades.HasUpgrade(item.upgrade))
             {
-                PlayerManager.StCharacter.upgrade.RemoveUpgrade(item.upgrade);
+                PlayerManager.CharacterStatic.upgrades.RemoveUpgrade(item.upgrade);
 
             }
         }
@@ -120,7 +131,7 @@ public class UIInventoryManager : MonoBehaviour
     {
         if (e.objectUnderCursor == null)
         {
-            return;
+            goto noDropOnInventory;
         }
 
         ItemEntry draggedItemEntry = e.itemEntry;
@@ -134,7 +145,7 @@ public class UIInventoryManager : MonoBehaviour
 
                 _playerItemsCollection[e.slotUnderCursorNum] = draggedItemEntry;
             }
-
+            else
             if (e.objectUnderCursor.tag == "EquipSlot")
             {
                 if (e.itemEntry.item.isSymbol == true)
@@ -148,23 +159,23 @@ public class UIInventoryManager : MonoBehaviour
 
                 if (landedItemEntry.item != null)
                 {
-                    if (landedItemEntry.item.upgrade != null && PlayerManager.StCharacter.upgrade.HasUpgrade(landedItemEntry.item.upgrade))
+                    if (landedItemEntry.item.upgrade != null && PlayerManager.CharacterStatic.upgrades.HasUpgrade(landedItemEntry.item.upgrade))
                     {
-                        PlayerManager.StCharacter.upgrade.RemoveUpgrade(landedItemEntry.item.upgrade);
+                        PlayerManager.CharacterStatic.upgrades.RemoveUpgrade(landedItemEntry.item.upgrade);
                     }
                 }
                 if (e.itemEntry.item.upgrade != null)
                 {
-                    PlayerManager.StCharacter.upgrade.AddUpgrade(e.itemEntry.item.upgrade);
+                    PlayerManager.CharacterStatic.upgrades.AddUpgrade(e.itemEntry.item.upgrade);
 
                 }
             }
-
+            else
             if (e.objectUnderCursor.tag == "TraderSlot")
             {
-                PlayerManager.StCharacter.AddCurrency(draggedItemEntry.item.currencyType, draggedItemEntry.item.price);
+                PlayerManager.CharacterStatic.AddCurrency(draggedItemEntry.item.currencyType, draggedItemEntry.item.price);
             }
-
+            else
             if (e.objectUnderCursor.tag == "SymbolSlot")
             {
                 if (e.itemEntry.item.isSymbol == false)
@@ -178,18 +189,21 @@ public class UIInventoryManager : MonoBehaviour
 
                 if (landedItemEntry.item != null)
                 {
-                    if (landedItemEntry.item.upgrade != null && PlayerManager.StCharacter.upgrade.HasUpgrade(landedItemEntry.item.upgrade))
+                    if (landedItemEntry.item.upgrade != null && PlayerManager.CharacterStatic.upgrades.HasUpgrade(landedItemEntry.item.upgrade))
                     {
-                        PlayerManager.StCharacter.upgrade.RemoveUpgrade(landedItemEntry.item.upgrade);
+                        PlayerManager.CharacterStatic.upgrades.RemoveUpgrade(landedItemEntry.item.upgrade);
                     }
                 }
                 if (e.itemEntry.item.upgrade != null)
                 {
-                    PlayerManager.StCharacter.upgrade.AddUpgrade(e.itemEntry.item.upgrade);
+                    PlayerManager.CharacterStatic.upgrades.AddUpgrade(e.itemEntry.item.upgrade);
 
                 }
             }
-
+            else
+            {
+                goto noDropOnInventory;
+            }
 
             if (landedItemEntry != null && landedItemEntry.item != null)
             {
@@ -198,8 +212,14 @@ public class UIInventoryManager : MonoBehaviour
             }
 
         }
+        return;
 
-
+        noDropOnInventory:
+        Transform playerTransform = PlayerManager.CharacterStatic.rootTransform;
+        WorldItemController itemController = Instantiate(e.itemEntry.item.Prefab, playerTransform.position, Quaternion.LookRotation(new Vector3(playerTransform.forward.x, 0, playerTransform.forward.z).normalized))
+            .GetComponentInChildren<WorldItemController>();
+        itemController.rootObject.gameObject.AddComponent<BallisticMover>();
+        itemController.ItemEntry = e.itemEntry;
 
     }
     bool AbleToBuyItem(Item item)

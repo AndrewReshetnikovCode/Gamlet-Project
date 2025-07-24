@@ -2,10 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerVisualEffectController : VisualEffectController
+public class PlayerVisualEffectController : VisualEffectsController
 {
-    public override void ActivateBurn(bool v)
-    {
-
-    }
+    
 }

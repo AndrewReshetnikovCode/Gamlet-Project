@@ -3,7 +3,7 @@
 
 public class Decision : ScriptableObject
 {
-    public AIState state;
+    public AIStateSettings state;
     public virtual float Evaluate(CharacterFacade character) { return 0; }
     
 

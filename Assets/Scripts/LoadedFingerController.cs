@@ -6,7 +6,9 @@ public class LoadedFingerController : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            PlayerManager.StCharacter.GetComponent<ShootingController>().LaunchBullet(transform.position, transform.forward);
+            ShootingController sc = PlayerManager.CharacterStatic.GetComponent<ShootingController>();
+            WeaponData wh = sc.weaponTypes.Find(t => t.name == "WizardHand");
+            sc.LaunchBullet(transform.position, transform.forward, wh);
             Destroy(gameObject);
         }
     }

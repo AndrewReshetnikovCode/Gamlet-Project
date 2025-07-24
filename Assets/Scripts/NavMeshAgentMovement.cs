@@ -38,6 +38,7 @@ public class NavMeshAgentMovement : MonoBehaviour
     }
     void Update()
     {
+        GetComponent<RotationController>().ApplyRotationToPoint(PlayerManager.CharacterStatic.transform.position, true);
         return;
         _movementForce = (transform.forward * _forwardVelocity + transform.right * _rightVelocity).normalized * _currentSpeed;
         if (_movementForce.magnitude > _maxSpeed)

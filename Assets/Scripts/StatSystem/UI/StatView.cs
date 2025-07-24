@@ -29,14 +29,6 @@ public class StatView : UIBehaviour
         simple = 0,
         complex
     }
-    protected override void OnEnable()
-    {
-        if (_inited == true)
-        {
-            return;
-        }
-        Init();
-    }
     protected override void Start()
     {
         if (_text != null)

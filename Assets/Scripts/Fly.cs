@@ -4,19 +4,18 @@ using UnityEngine;
 
 public class Fly : MonoBehaviour
 {
-    [SerializeField] Transform _base;
     [SerializeField] float _min;
     [SerializeField] float _max;
     [SerializeField] float _heightChangeSpeed;
-    Vector3 _currentTarget;
-    bool up = false;
+    //Vector3 _currentTarget;
+    //bool up = false;
 
     // Start is called before the first frame update
     void Start()
     {
-        Vector3 t = _base.position;
+        Vector3 t = GetComponent<CharacterFacade>().rootTransform.position;
         t.y += _min;
-        _currentTarget = t;
+        //_currentTarget = t;
     }
 
     // Update is called once per frame

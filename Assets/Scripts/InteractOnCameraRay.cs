@@ -1,78 +1,74 @@
-﻿using Unity.VisualScripting;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace Assets.Scripts
+public class InteractOnCameraRay : MonoBehaviour, ICameraRayReceiver
 {
-    public class InteractOnCameraRay : MonoBehaviour, ICameraRayReceiver
+    public UnityEvent OnInteract;
+
+    public bool triggerOnce = true;
+
+    TMP_Text _interactionText;
+    [SerializeField] KeyCode _interactButton = KeyCode.E;
+    [SerializeField] float _maxDistance = 5f;
+
+    bool _isInFocus;
+    bool _wasTrigger = false;
+
+    void Start()
     {
-        public UnityEvent OnInteract;
-
-        public bool triggerOnce = true;
-        public bool unlockCursor;
-
-        [SerializeField] private GameObject interactionPrompt;
-        [SerializeField] private GameObject activasionTarget;
-        [SerializeField] private KeyCode interactButton = KeyCode.E;
-        [SerializeField] private float maxDistance = 5f;
-
-        private bool isInFocus;
-        bool _wasTrigger = false;
-        void Awake()
+        if (_interactionText == null)
         {
-            if (interactionPrompt != null)
-            {
-                interactionPrompt.SetActive(false);
-            }
-        }
-
-        public virtual void OnRayEnter()
-        {
-            if (triggerOnce && _wasTrigger)
-            {
-                return;
-            }
-            if (interactionPrompt != null)
-            {
-                interactionPrompt.SetActive(true);
-            }
-            isInFocus = true;
-        }
-
-        public virtual void OnRay()
-        {
-            if (triggerOnce && _wasTrigger)
-            {
-                return;
-            }
-            if (isInFocus && Input.GetKeyDown(interactButton))
-            {
-                if (activasionTarget != null)
-                {
-                    activasionTarget.SetActive(true);
-                }
-                if (unlockCursor)
-                {
-                    PlayerManager.Instance.CursorLocked = false;
-                }
-                _wasTrigger = true;
-                OnInteract.Invoke();
-                
-            }
-        }
-
-        public virtual void OnRayExit()
-        {
-            if (interactionPrompt != null)
-            {
-                interactionPrompt.SetActive(false);
-            }
-            isInFocus = false;
-        }
-
-        public virtual float GetMaxDistance()
-        {
-            return maxDistance;
+            _interactionText = UIManager.instance.InteractionText;
         }
     }
+
+    public virtual void OnRayEnter()
+    {
+        if (triggerOnce && _wasTrigger)
+        {
+            return;
+        }
+        if (_interactionText != null)
+        {
+            _interactionText.text = GetInteractionText();
+        }
+        _isInFocus = true;
+    }
+    public void OnRay()
+    {
+        if (Input.GetKeyDown(_interactButton))
+        {
+            if (triggerOnce)
+            {
+                if (_wasTrigger)
+                {
+                    return;
+                }
+                //Сразу очищаем надпись взаимодействия
+                _interactionText.text = string.Empty;
+            }
+            _wasTrigger = true;
+            OnInteract?.Invoke();
+        }
+    }
+
+    public virtual void OnRayExit()
+    {
+        if (_interactionText != null)
+        {
+            _interactionText.text = string.Empty;
+        }
+        _isInFocus = false;
+    }
+
+    public virtual float GetMaxDistance()
+    {
+        return _maxDistance;
+    }
+    string GetInteractionText()
+    {
+        return _interactButton.ToString().ToUpper() + " - to interact";
+    }
 }
+

@@ -9,37 +9,15 @@ using Random = UnityEngine.Random;
 public class ShootingController : MonoBehaviour
 {
     public event Action onShoot;
+    public event Action onReloadStart;
+    public event Action onReloadEnd;
     /// <summary>
     /// убил ли выстрел цель
     /// </summary>
     public event Action<float> onHit;
 
-    [SerializeField] BulletTracer _bulletTracer;
-    [SerializeField] BulletImpact _bulletImpact;
+    public static ShootingController instance;
 
-    [Header("ОСНОВНЫЕ НАСТРОЙКИ")]
-    public List<WeaponData> weaponTypes;
-    public List<WeaponState> weaponStates;
-    public int selectedWeaponNum = 0;
-    private AudioSource audioSource;
-    public LayerMask hitMask;
-
-    private WeaponData _currentWeapon => weaponTypes[selectedWeaponNum];
-    private float nextFireTime = 0f;
-    private bool isReloading = false;
-
-    [Header("НАСТРОЙКИ СЛЕДА ОТ ПУЛИ")]
-    // Параметры следа от пули
-    public float maxRailDistance = 50f;
-    [SerializeField] GameObject _explosionPrefab;
-
-    List<ProjectileHandler> _handlers = new();
-    [AutoAssignStat] Stat _damage;
-    public int RicochetQuantity { get; set; }
-    public int PierceQuantity { get; set; }
-    public WeaponState CurrentWeaponState => weaponStates[selectedWeaponNum];
-    int _currentPierced = 0;
-    int _currentRicochets = 0;
     [Serializable]
     public class WeaponState
     {
@@ -47,15 +25,56 @@ public class ShootingController : MonoBehaviour
         public int stockAmmo = 0;
     }
 
-    CharacterFacade character;
+    [Header("ОСНОВНЫЕ НАСТРОЙКИ")]
+    public List<WeaponData> weaponTypes;
+    public List<WeaponState> weaponStates;
+
+    public LayerMask hitMask;
+
+    public WeaponData CurrentWeapon => weaponTypes[_selectedWeaponNum];
+
+    public WeaponState CurrentWeaponState => weaponStates[_selectedWeaponNum];
+
+    [Header("НАСТРОЙКИ СЛЕДА ОТ ПУЛИ")]
+    public Vector3 originOffset;
+    public float maxRailDistance = 50f;
+    public int RicochetQuantity { get; set; }
+    public int PierceQuantity { get; set; }
+
+    [SerializeField] BulletImpact _bulletSurfaceImpact;
 
     [SerializeField] RecoilEffect _recoil;
+
+    [SerializeField] Transform _modelParent;
+    [SerializeField] Transform CurrentModel => _modelParent.GetChild(CurrentWeapon.modelChildNum);
+
+    [SerializeField] int _weaponAtStart;
+
+    int _selectedWeaponNum = 0;
+    AudioSource audioSource;
+
+    float nextFireTime = 0f;
+    bool isReloading = false;
+
+    List<ProjectileHandler> _handlers = new();
+    
+    int _currentPierced = 0;
+    int _currentRicochets = 0;
+    
+
+    CharacterFacade _character;
+
+    [SerializeField] AimFovController _aimController;
+    private void Awake()
+    {
+        instance = this;
+    }
     void Start()
     {
         if (audioSource == null) audioSource = GetComponent<AudioSource>();
-        if (character == null) character = GetComponent<CharacterFacade>();
+        if (_character == null) _character = GetComponent<CharacterFacade>();
 
-        UpgradeController uc = GetComponent<UpgradeController>();
+        UpgradesController uc = GetComponent<UpgradesController>();
         uc.OnUpgradeAdded += ReorderHandlers;
         uc.OnUpgradeRemoved += ReorderHandlers;
 
@@ -64,19 +83,19 @@ public class ShootingController : MonoBehaviour
             FillWeapon(i);
         }
 
-        SelectWeapon();
+        SelectWeapon(_weaponAtStart);
     }
     void Update()
     {
         UpdateInputWeaponSelection();
-        _currentWeapon.behaviuor?.OnUpdate();
+        CurrentWeapon.behaviuor?.OnUpdate();
         if (isReloading)
             return;
-        if (Input.GetButtonDown("Fire1") && _currentWeapon.autoFire == false && Time.time >= nextFireTime)
+        if (Input.GetButtonDown("Fire1") && CurrentWeapon.autoFire == false && Time.time >= nextFireTime)
         {
             Shoot();
         }
-        if (Input.GetButton("Fire1") && _currentWeapon.autoFire == true & Time.time >= nextFireTime)
+        if (Input.GetButton("Fire1") && CurrentWeapon.autoFire == true & Time.time >= nextFireTime)
         {
             Shoot();
         }
@@ -113,6 +132,10 @@ public class ShootingController : MonoBehaviour
         if (CurrentWeaponState.loadedAmmo == 0)
         {
             StartCoroutine(Reload());
+            if (CurrentWeapon != null && CurrentWeapon.behaviuor != null)
+            {
+                CurrentWeapon.behaviuor.OnShoot();
+            }
             return;
         }
         CurrentWeaponState.loadedAmmo--;
@@ -121,32 +144,41 @@ public class ShootingController : MonoBehaviour
         _currentRicochets = 0;
         _currentPierced = 0;
 
-        nextFireTime = Time.time + _currentWeapon.fireRate;
+        nextFireTime = Time.time + CurrentWeapon.fireRate;
 
-        audioSource.PlayOneShot(_currentWeapon.fireSound);
+        audioSource.PlayOneShot(CurrentWeapon.fireSound);
 
         if (_recoil != null)
         {
-            _recoil.TriggerRecoil(_currentWeapon.recoilData);
+            _recoil.TriggerRecoil(CurrentWeapon.recoilData);
         }
 
-        for (int i = 0; i < _currentWeapon.bulletsPerShot; i++)
+        for (int i = 0; i < CurrentWeapon.bulletsPerShot; i++)
         {
-            if (_currentWeapon.isRail)
+            if (CurrentWeapon.isRail)
             {
                 Vector3 direction = Camera.main.transform.forward;
-                if (_currentWeapon.bulletsPerShot > 1) // Для дробовика
+                if (i != 0)
                 {
-                    direction.x += Random.Range(-_currentWeapon.spread, _currentWeapon.spread);
-                    direction.y += Random.Range(-_currentWeapon.spread, _currentWeapon.spread);
+                    Quaternion rotation = Quaternion.AngleAxis(
+                    Random.Range(-CurrentWeapon.spreadAngle, CurrentWeapon.spreadAngle),
+                    Camera.main.transform.right) * // Ось X камеры для вертикального отклонения
+                    Quaternion.AngleAxis(
+                    Random.Range(-CurrentWeapon.spreadAngle, CurrentWeapon.spreadAngle),
+                    Camera.main.transform.up); // Ось Y камеры для горизонтального отклонения
+                    direction = rotation * direction;
                 }
-                LaunchBullet(Camera.main.transform.position, direction);
+                LaunchBullet(Camera.main.transform.position, direction, CurrentWeapon);
             }
         }
 
+        if (CurrentWeapon != null && CurrentWeapon.behaviuor != null)
+        {
+            CurrentWeapon.behaviuor.OnShoot();
+        }
         onShoot?.Invoke();
     }
-    public void LaunchBullet(Vector3 origin, Vector3 dir)
+    public void LaunchBullet(Vector3 origin, Vector3 dir, WeaponData weapon)
     {
         RaycastHit[] hits = Physics.RaycastAll(origin, dir, maxRailDistance, hitMask);
 
@@ -159,7 +191,7 @@ public class ShootingController : MonoBehaviour
         }
         else
         {
-            CreateBulletTrail(origin, bulletEndPos);
+            CreateBulletTrail(origin, bulletEndPos, weapon.trailPrefab);
             return;
         }
 
@@ -173,22 +205,24 @@ public class ShootingController : MonoBehaviour
                 hittedChar = hit.transform.GetComponentInParent<CharacterFacade>();
                 if (hittedChar != null)
                 {
-                    hittedChar.ApplyDamage(_currentWeapon.damage, this);
-                    if (_currentWeapon.behaviuor != null && _currentWeapon.behaviuor.effectOnProjHit != null && hittedChar.upgrade != null)
+                    bool isHeadshot = hit.transform.tag == "Head";
+                    hittedChar.ApplyBulletDamage(new DamageInfo() { appliedDamage = weapon.damage, point = hit.point, dir = dir, source = this, headshot = isHeadshot });
+                    if (weapon.behaviuor != null && weapon.behaviuor.effectOnProjHit != null && hittedChar.upgrades != null)
                     {
-                        hittedChar.upgrade.AddUpgrade(_currentWeapon.behaviuor.effectOnProjHit);
+                        hittedChar.upgrades.AddUpgrade(weapon.behaviuor.effectOnProjHit);
                     }
-                    CreateBulletTrail(origin, hit.point);
+                    CreateBulletTrail(origin, hit.point, weapon.trailPrefab);
                     CreateExplosion(hit.point);
-                    onHit?.Invoke(hittedChar.health.CurrentHealth/hittedChar.health.MaxHealth);
+                    onHit?.Invoke(hittedChar.health.CurrentHealth / hittedChar.health.MaxHealth);
                 }
             }
             HitInfo info = new();
             info.reciever = hittedChar;
-            info.source = character;
-            info.damage = _damage.BaseValue;
+            info.source = _character;
+            info.damage = weapon.damage;
             info.dir = dir;
             info.raycastHit = hit;
+            info.weapon = weapon;
 
             foreach (var item in _handlers)
             {
@@ -199,7 +233,7 @@ public class ShootingController : MonoBehaviour
             {
                 hit.transform.GetComponent<OilController>().FireUp();
                 CreateExplosion(bulletEndPos);
-                CreateBulletTrail(origin, hit.point);
+                CreateBulletTrail(origin, hit.point, weapon.trailPrefab);
                 break;
             }
 
@@ -209,14 +243,14 @@ public class ShootingController : MonoBehaviour
                 if (_currentRicochets < RicochetQuantity)
                 {
                     _currentRicochets++;
-                    CreateBulletTrail(origin, hit.point);
-                    LaunchBullet(hit.point, Vector3.Reflect(dir.normalized, hit.normal.normalized));
+                    CreateBulletTrail(origin, hit.point, weapon.trailPrefab);
+                    LaunchBullet(hit.point, Vector3.Reflect(dir.normalized, hit.normal.normalized), weapon);
                 }
                 else
                 {
                     bulletEndPos = hit.point;
                     CreateExplosion(bulletEndPos);
-                    CreateBulletTrail(origin, hit.point);
+                    CreateBulletTrail(origin, hit.point, weapon.trailPrefab);
                     CreateBulletHole(hit);
                 }
                 break;
@@ -226,7 +260,7 @@ public class ShootingController : MonoBehaviour
             {
                 bulletEndPos = hit.point;
                 CreateExplosion(bulletEndPos);
-                CreateBulletTrail(origin, hit.point);
+                CreateBulletTrail(origin, hit.point, weapon.trailPrefab);
                 break;
             }
             else
@@ -235,35 +269,44 @@ public class ShootingController : MonoBehaviour
             }
         }
     }
-    public void SelectWeapon()
+
+    public void SelectWeapon(int num)
     {
-        if (_currentWeapon != null && _currentWeapon.behaviuor != null)
+        CurrentModel.gameObject.SetActive(false);
+        if (CurrentWeapon != null && CurrentWeapon.behaviuor != null)
         {
-            _currentWeapon.behaviuor.OnDeactivated();
+            CurrentWeapon.behaviuor.OnDeactivated();
         }
-        _currentWeapon.behaviuor?.OnActivated();
+        _selectedWeaponNum = num;
+
+        CurrentModel.gameObject.SetActive(true);
+
+        CurrentWeapon.behaviuor?.OnActivated();
+
+        UpdateAimSettings();
     }
     void ReorderHandlers(Upgrade u)
     {
         _handlers.OrderBy((h) => h.Priority);
     }
-    
-    
+
+
     void CreateExplosion(Vector3 pos)
     {
-        GameObject explosion = Instantiate(_explosionPrefab, pos, Quaternion.LookRotation(transform.position - pos));
-        Destroy(explosion, 2f);
+        //GameObject explosion = Instantiate(_explosionPrefab, pos, Quaternion.LookRotation(transform.position - pos));
+        //Destroy(explosion, 2f);
     }
     void CreateBulletHole(RaycastHit hitInfo)
     {
-        _bulletImpact.SpawnBulletDecal(hitInfo);
+            _bulletSurfaceImpact.Execute(hitInfo, CurrentWeapon.holeOnHitWall, CurrentWeapon.particlesOnHitWall);
+        
     }
-    void CreateBulletTrail(Vector3 startPosition, Vector3 endPosition)
+    void CreateBulletTrail(Vector3 startPosition, Vector3 endPosition, ParticleSystem trailPrefab)
     {
-        if (_currentWeapon.haveTrail)
+        startPosition += originOffset;
+        if (CurrentWeapon.haveTrail)
         {
-            _bulletTracer.CreateTracer(startPosition, endPosition, _currentWeapon.trailPrefab);
-
+            ParticleLineBuilder.Create(startPosition, endPosition, trailPrefab);
         }
     }
     void UpdateInputWeaponSelection()
@@ -276,21 +319,34 @@ public class ShootingController : MonoBehaviour
                 num--;
                 if (num >= 0 && num < weaponTypes.Count)
                 {
-                    selectedWeaponNum = num;
-                    SelectWeapon();
+                    SelectWeapon(num);
                 }
             }
         }
+    }
+    void UpdateAimSettings()
+    {
+        _aimController.SetAbilityToAim(CurrentWeapon.ableToAim);
     }
     IEnumerator Reload()
     {
 
         isReloading = true;
-        yield return new WaitForSeconds(_currentWeapon.reloadTime);
-        int reducedAmmo = CurrentWeaponState.stockAmmo > _currentWeapon.maxLoadedAmmo ? _currentWeapon.maxLoadedAmmo : CurrentWeaponState.stockAmmo;
+        onReloadStart?.Invoke();
+        yield return new WaitForSeconds(CurrentWeapon.reloadTime);
 
-        CurrentWeaponState.loadedAmmo = reducedAmmo;
-        CurrentWeaponState.stockAmmo -= reducedAmmo;
+        if (CurrentWeaponState.stockAmmo == -1)
+        {
+            CurrentWeaponState.loadedAmmo = CurrentWeapon.maxLoadedAmmo;
+        }
+        else
+        {
+            int reducedAmmo = CurrentWeaponState.stockAmmo > CurrentWeapon.maxLoadedAmmo ? CurrentWeapon.maxLoadedAmmo : CurrentWeaponState.stockAmmo;
+
+            CurrentWeaponState.loadedAmmo = reducedAmmo;
+            CurrentWeaponState.stockAmmo -= reducedAmmo;
+        }
         isReloading = false;
+        onReloadEnd?.Invoke();
     }
 }

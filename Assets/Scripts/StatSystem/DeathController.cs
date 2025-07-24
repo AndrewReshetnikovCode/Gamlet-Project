@@ -13,33 +13,23 @@ public class DeathController : MonoBehaviour
 {
     public UnityEvent OnDeath;
 
+    public bool playAnimOnAlive; 
+    public string aliveAnimTrigger;
+
+    [SerializeField] HealthController _health;
     [SerializeField] AudioClip _deathSound;
     [SerializeField] float _destroyDelay;
 
-    public bool Dead { get; private set; } = false;
+    public bool Dead => _health.CurrentHealth == 0;
 
     public void Die()
     {
-        
-        Dead = true;
         CharacterFacade character = GetComponent<CharacterFacade>();
-        CharacterRow creatureRow = character.row;
-        if (creatureRow != null)
-        {
-            creatureRow.isAlive.Value = false;
-            creatureRow.spawner.Value?.OnCreatureDeath(creatureRow.gameObject.Value);
-        }
-        //ExecuteActions();
-        if (tag != "Player")
-        {
-            Invoke(nameof(DestroyGameObject), _destroyDelay);
-        }
-        else
-        {
-            gameObject.SetActive(false);
-        }
-        //GetComponentInChildren<TMP_Text>().text = "Dead";
 
+        
+        Invoke(nameof(DestroyGameObject), _destroyDelay);
+
+        character.spawner?.OnCreatureDeath(gameObject);
         ProtectedOnDeath();
         OnDeath?.Invoke();
     }
@@ -47,7 +37,14 @@ public class DeathController : MonoBehaviour
     //{
     //    PlaySound();
     //}
-    
+    public void MakeAlive()
+    {
+        GetComponent<HealthController>().CurrentHealth = GetComponent<HealthController>().MaxHealth;
+        if (playAnimOnAlive)
+        {
+            GetComponentInChildren<Animator>().SetTrigger(aliveAnimTrigger);
+        }
+    }
     void DestroyGameObject() { Destroy(GetComponent<CharacterFacade>().GetMainTransform().gameObject); }
     protected virtual void ProtectedOnDeath()
     {

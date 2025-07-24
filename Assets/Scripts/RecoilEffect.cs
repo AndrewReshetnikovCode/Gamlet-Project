@@ -2,18 +2,18 @@
 
 public class RecoilEffect : MonoBehaviour
 {
-    private Quaternion originalRotation;
-    private Quaternion currentRotation;
-    private Quaternion targetRotation;
-
-    private Vector3 originalPosition;
-    private Vector3 currentPosition;
-    private Vector3 targetPosition;
-
-    private Camera mainCamera;
-    private bool isRecoiling = false;
-
     public float currentSpread = 0f;
+
+    Quaternion _originalRotation;
+    Quaternion _currentRotation;
+    Quaternion _targetRotation;
+
+    Vector3 _originalPosition;
+    Vector3 _currentPosition;
+    Vector3 _targetPosition;
+
+    Camera _mainCamera;
+    bool _isRecoiling = false;
 
     [SerializeField] float maxSpread = 5f; 
 
@@ -21,13 +21,13 @@ public class RecoilEffect : MonoBehaviour
     [SerializeField] float _spreadDecreaseRate = 1;
     void Start()
     {
-        mainCamera = Camera.main;
-        if (mainCamera != null)
+        _mainCamera = Camera.main;
+        if (_mainCamera != null)
         {
-            originalRotation = mainCamera.transform.localRotation;
-            originalPosition = mainCamera.transform.localPosition;
-            currentRotation = originalRotation;
-            currentPosition = originalPosition;
+            _originalRotation = _mainCamera.transform.localRotation;
+            _originalPosition = _mainCamera.transform.localPosition;
+            _currentRotation = _originalRotation;
+            _currentPosition = _originalPosition;
         }
         else
         {
@@ -41,13 +41,13 @@ public class RecoilEffect : MonoBehaviour
         {
             return;
         }
-        if (isRecoiling)
+        if (_isRecoiling)
         {
             UpdateRecoil();
         }
         else
         {
-            currentSpread -= _spreadDecreaseRate * Time.deltaTime;
+            currentSpread -= _spreadDecreaseRate * Time.deltaTime * 10;
             if (currentSpread < 0)
             {
                 currentSpread = 0;
@@ -58,38 +58,38 @@ public class RecoilEffect : MonoBehaviour
 
     public void TriggerRecoil(RecoilData recoilData)
     {
-        if (mainCamera == null) return;
+        if (_mainCamera == null) return;
         _d = recoilData;
 
         //float recoilFactor = Mathf.Clamp(currentSpread, 0, maxSpread);
         float recoilX = Random.Range((_d.recoilAmountX / 2), _d.recoilAmountX);
         currentSpread = recoilX;
         Quaternion recoilRotation = Quaternion.Euler(-recoilX, 0, 0);
-        targetRotation = currentRotation * recoilRotation;
+        _targetRotation = _currentRotation * recoilRotation;
 
-        isRecoiling = true;
+        _isRecoiling = true;
     }
 
     private void UpdateRecoil()
     {
-        currentRotation = Quaternion.Slerp(currentRotation, targetRotation, _d.recoilSpeed * Time.deltaTime);
-        mainCamera.transform.localRotation = currentRotation;
+        _currentRotation = Quaternion.Slerp(_currentRotation, _targetRotation, _d.recoilSpeed * Time.deltaTime);
+        _mainCamera.transform.localRotation = _currentRotation;
 
-        mainCamera.transform.localPosition = currentPosition;
+        _mainCamera.transform.localPosition = _currentPosition;
 
-        float angle = Quaternion.Angle(currentRotation, targetRotation);
+        float angle = Quaternion.Angle(_currentRotation, _targetRotation);
         if (angle < 0.1f && 
-            Vector3.Distance(currentPosition, targetPosition) < 0.01f)
+            Vector3.Distance(_currentPosition, _targetPosition) < 0.01f)
         {
-            isRecoiling = false;
+            _isRecoiling = false;
         }
     }
     private void ReturnToOriginalPosition()
     {
-        currentRotation = Quaternion.Slerp(currentRotation, originalRotation, _d.returnSpeed * Time.deltaTime);
-        mainCamera.transform.localRotation = currentRotation;
+        _currentRotation = Quaternion.Slerp(_currentRotation, _originalRotation, _d.returnSpeed * Time.deltaTime);
+        _mainCamera.transform.localRotation = _currentRotation;
 
-        mainCamera.transform.localPosition = currentPosition;
+        _mainCamera.transform.localPosition = _currentPosition;
     }
 
 

@@ -1,175 +1,149 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
-public class UpgradeController : MonoBehaviour
+public class UpgradesController : MonoBehaviour
 {
     public event Action<Upgrade> OnUpgradeAdded;
     public event Action<Upgrade> OnUpgradeRemoved;
 
-    public CharacterFacade character;
-
-    [Header("Upgrades Settings")]
-    public int maxUpgrades = 5;
-
-    private List<Upgrade> activeUpgrades = new List<Upgrade>();
-    private List<TemporaryUpgrade> activeTemporaryUpgrades = new();
-    private Dictionary<Upgrade, UpgradeState> upgradeTimers = new();
-    public Dictionary<Upgrade, ActionOnTick> upgradesOnTickActions = new();
-    public class ActionOnTick
-    {
-        public object source;
-        public Action<(Upgrade,object,UpgradeController)> action;
-    }
-    class UpgradeState
+    public class UpgradeState
     {
         public float tickTimer;
-        public float lifetimeTimer;
+    }
+    class Bundle
+    {
+        public Upgrade upgrade;
+        public UpgradeState state;
     }
 
-    public List<Upgrade> upgradesAtStart;
-    private void Start()
+    public CharacterFacade character;
+
+    public int maxUpgrades = 5;
+
+    [SerializeField] List<Upgrade> _upgradesAtStart;
+
+    [SerializeField] List<Bundle> _activeUpgrades = new();
+
+    [SerializeField] VisualEffectsController _visualEffets;
+
+    public void Init()
     {
         character = GetComponent<CharacterFacade>();
-        if (upgradesAtStart != null)
+        if (_upgradesAtStart != null)
         {
-        foreach (var item in upgradesAtStart)
-        {
+            foreach (var item in _upgradesAtStart)
+            {
                 AddUpgrade(item);
+            }
         }
 
-        }
+        character.death.OnDeath.AddListener(OnDeath);
     }
     private void Update()
     {
-        // Обновляем таймеры для каждого апгрейда
-        Upgrade[] u = activeUpgrades.ToArray();
-        for (int i = 0; i < u.Length; i++)
+        for (int i = 0; i < _activeUpgrades.Count; i++)
         {
-            Upgrade upgrade = u[i];
-            UpgradeState timers = upgradeTimers[upgrade];
-            timers.tickTimer -= Time.deltaTime;
-            if (timers.tickTimer <= 0)
-            {
-                
-                upgrade.Tick(this);
-                timers.tickTimer = upgrade.tickInterval;
-            }
-        }
-        TemporaryUpgrade[] t = activeTemporaryUpgrades.ToArray();
-        for (int i = 0; i < t.Length; i++)
-        {
-            TemporaryUpgrade upgrade = t[i];
-            UpgradeState timers = upgradeTimers[upgrade];
-            timers.tickTimer -= Time.deltaTime;
-            timers.lifetimeTimer -= Time.deltaTime;
-            if (upgradeTimers[upgrade].tickTimer <= 0)
+            Upgrade upgrade = _activeUpgrades[i].upgrade;
+            UpgradeState state = _activeUpgrades[i].state;
+
+            state.tickTimer -= Time.deltaTime;
+            if (state.tickTimer <= 0)
             {
                 upgrade.Tick(this);
-                if (upgradesOnTickActions.ContainsKey(upgrade))
-                {
-                    ActionOnTick a = upgradesOnTickActions[upgrade];
-                    a.action?.Invoke((upgrade, a.source, this));
-
-                }
-
-                timers.tickTimer = upgrade.tickInterval;
-            }
-            if (timers.lifetimeTimer < 0)
-            {
-                RemoveUpgrade(upgrade);
+                state.tickTimer = upgrade.tickInterval;
             }
         }
     }
     private void OnDestroy()
     {
-        foreach (var item in activeUpgrades)
+        foreach (var item in _activeUpgrades)
         {
-            item.Deactivate(this);
-        }
-        foreach (var item in activeTemporaryUpgrades)
-        {
-            item.Deactivate(this);
-
+            item.upgrade.Deactivate(this);
         }
     }
 
-    public bool AddUpgrade(Upgrade newUpgrade)
+    public void Apply(Upgrade logic, VisualEffects visual)
     {
-        // Проверяем, есть ли апгрейд этого типа
-        Upgrade existingUpgrade = activeUpgrades.Find(u => u.GetType() == newUpgrade.GetType());
-        if (upgradeTimers.ContainsKey(newUpgrade) == false)
-        {
-            upgradeTimers.Add(newUpgrade, new UpgradeState());
-        }
+        _visualEffets.SetActive(visual, true);
+        AddUpgrade(logic);
+    }
+    public void ApplyTemporary(Upgrade logic, float time, VisualEffects visual)
+    {
+        _visualEffets.SetActive(visual, true);
+        AddUpgrade(logic);
+
+        StartCoroutine(DisableEffect(logic, time, visual));
+    }
+    public bool AddUpgrade(Upgrade newUpgrade, bool resetTimerIfExistsSame = true)
+    {
+        Bundle existingUpgrade = _activeUpgrades.Find(b => b.upgrade.upgradeName == newUpgrade.upgradeName);
+
         if (existingUpgrade != null)
         {
-            TemporaryUpgrade t = newUpgrade as TemporaryUpgrade;
-            if (t != null)
-            {
-                upgradeTimers[existingUpgrade].lifetimeTimer += t.lifetime;
-                return true;
-            }
-            else
-            {
-                if (existingUpgrade.strongerVersion == newUpgrade)
-                {
-                    RemoveUpgrade(existingUpgrade);
-                    Add(newUpgrade);
-
-                    upgradeTimers[newUpgrade].tickTimer = newUpgrade.tickInterval;
-                    newUpgrade.Activate(this);
-                    OnUpgradeAdded?.Invoke(newUpgrade);
-                    return true;
-                }
-                return false; // Не удалось добавить
-            }
+            return false;
         }
 
-        // Проверяем лимит
-        if (activeUpgrades.Count >= maxUpgrades)
+        if (_activeUpgrades.Count >= maxUpgrades)
             return false;
 
-        // Добавляем новый апгрейд
         Add(newUpgrade);
-        upgradeTimers[newUpgrade].tickTimer = newUpgrade.tickInterval;
-        newUpgrade.Activate(this);
-        OnUpgradeAdded?.Invoke(newUpgrade);
+
+        
         return true;
     }
 
     public void RemoveUpgrade(Upgrade u)
     {
-        if (u is TemporaryUpgrade)
+        Bundle finded = _activeUpgrades.Find(b => b.upgrade == u);
+        if (finded == null)
         {
-            activeTemporaryUpgrades.Remove((TemporaryUpgrade)u);
+            return;
         }
-        else
-        {
-            activeUpgrades.Remove(u);
-        }
-        u.Deactivate(this);
-        OnUpgradeRemoved?.Invoke(u);
+        _activeUpgrades.Remove(finded);
+
+        finded.upgrade.Deactivate(this);
+        OnUpgradeRemoved?.Invoke(finded.upgrade);
     }
-    void Add(Upgrade u)
-    {
-        if (u is TemporaryUpgrade)
-        {
-            activeTemporaryUpgrades.Add((TemporaryUpgrade)u);
-            upgradeTimers[u].lifetimeTimer = ((TemporaryUpgrade)u).lifetime;
-        }
-        else
-        {
-            activeUpgrades.Add(u);
-        }
-    }
+    
     public bool HasUpgrade(Upgrade upgrade)
     {
-        return activeUpgrades.Contains(upgrade);
+        return _activeUpgrades.Exists(b => b.upgrade);
     }
     public bool HasUpgrade<T>()
     {
         Type t = typeof(T);
-        return activeUpgrades.Find(u => u.GetType() == t) != null;
+        return _activeUpgrades.Find(u => u.upgrade.GetType() == t) != null;
+    }
+    public UpgradeState GetState(Upgrade upgrade)
+    {
+        Bundle b = _activeUpgrades.Find(b => b.upgrade == upgrade);
+        return b == null ? null : b.state;
+    }
+    void Add(Upgrade u)
+    {
+        Bundle bundle = new();
+        bundle.upgrade = u;
+        bundle.state = new UpgradeState() { tickTimer = u.tickInterval };
+
+        _activeUpgrades.Add(bundle);
+
+        u.Activate(this);
+        OnUpgradeAdded?.Invoke(u);
+    }
+    void OnDeath()
+    {
+        foreach (var item in _activeUpgrades)
+        {
+
+        }
+    }
+    IEnumerator DisableEffect(Upgrade effectLogic, float delay, VisualEffects visual)
+    {
+        yield return new WaitForSeconds(delay);
+        _visualEffets.SetActive(visual, false);
+        RemoveUpgrade(effectLogic);
     }
 }

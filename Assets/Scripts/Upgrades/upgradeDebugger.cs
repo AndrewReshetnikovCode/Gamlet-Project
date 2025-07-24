@@ -8,7 +8,7 @@ public class upgradeDebugger : MonoBehaviour
 {
     [Header("Target Controller")]
     [Tooltip("Укажите объект с UpgradeController")]
-    public UpgradeController targetController;
+    public UpgradesController targetController;
 
     [Header("Upgrades")]
     [Tooltip("Список апгрейдов для добавления или удаления")]

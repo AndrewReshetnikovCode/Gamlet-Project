@@ -1,19 +1,50 @@
 ﻿using InventorySystem;
 using UnityEngine;
 
-
 public class WorldItemController : MonoBehaviour
 {
-    public ItemEntry itemEntry;
-    private void OnCollisionEnter(Collision collision)
+    [SerializeField] ItemEntry _itemEntry;
+    public ItemEntry ItemEntry { get => _itemEntry; set => _itemEntry = value; }
+    public float unpickableTime;
+    public bool pickable;
+    public GameObject rootObject;
+    private void Start()
     {
-        if (collision.transform.tag == "Player")
+        if (_itemEntry.item == null)
         {
-            bool added = PlayerManager.StCharacter.itemsCollection.TryAdd(itemEntry);
-            if (added)
+            _itemEntry = new();
+            _itemEntry.item = ItemsDatabase.instance.items[0];
+            _itemEntry.quantity = 1;
+        }
+        else
+        {
+            _itemEntry.quantity = 1;
+        }
+            pickable = false;
+        Invoke("SetPickable", unpickableTime);
+    }
+    public void ResetUnpickableTime()
+    {
+        pickable = false;
+        Invoke("SetPickable", unpickableTime);
+    }
+    void SetPickable()
+    {
+        pickable = true;
+    }
+    private void OnTriggerStay(Collider other)
+    {
+        if (pickable)
+        {
+            if (other.transform.tag == "Player")
             {
-                Destroy(gameObject);
+                bool added = PlayerManager.CharacterStatic.itemsCollection.TryAdd(ItemEntry);
+                if (added)
+                {
+                    Destroy(rootObject);
+                }
             }
         }
     }
+
 }

@@ -7,27 +7,27 @@ namespace Assets.InventorySystem
 {
     public class ItemsManager : MonoBehaviour
     {
-        [SerializeField] ItemsCollection _worldItems;
+        public static ItemsManager instance;
 
-        public ItemsCollection WorldItems => _worldItems;
-
-        // Use this for initialization
-        void Start()
+        public static ItemsDatabase ItemsDatabase => instance.itemsDatabase;
+        public ItemsDatabase itemsDatabase;
+        private void Awake()
         {
+            instance = this;
+
             ItemsManager founded = GameObject.FindObjectOfType<ItemsManager>();
             if (founded != null && founded != this)
             {
                 Destroy(gameObject);
                 return;
             }
+            if (itemsDatabase == null)
+            {
+                //IEnumerator e = Unity.VisualScripting.AssetUtility.GetAllAssetsOfType<ItemsDatabase>().GetEnumerator();
+                //e.MoveNext();
+                //itemsDatabase = (ItemsDatabase)e.Current;
+            }
             DontDestroyOnLoad(gameObject);
-            ItemUtility.Init(_worldItems);
-        }
-
-        // Update is called once per frame
-        void Update()
-        {
-
         }
     }
 }

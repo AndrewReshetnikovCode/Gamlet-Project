@@ -68,7 +68,7 @@ namespace DemiurgEngine.UI.Dragging
         public void SetDraggedItem(ItemEntry itemEntry)
         {
             _isDragging = true;
-            _itemEntry = new() { item = itemEntry.item, quantity = itemEntry.quantity, worldObject = itemEntry.worldObject };
+            _itemEntry = new() { item = itemEntry.item, quantity = itemEntry.quantity };
         }
         public void SetDraggedSprite(Sprite sprite)
         {

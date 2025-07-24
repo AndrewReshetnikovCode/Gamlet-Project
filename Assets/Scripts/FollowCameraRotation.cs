@@ -1,21 +1,36 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Animations;
 
 public class FollowCameraRotation : MonoBehaviour
 {
-    public Transform cameraTransform; // Ссылка на трансформ камеры
-    private void Start()
+    [Tooltip("Камера, с которой будет синхронизироваться поворот объекта. Если не задана, используется главная камера.")]
+    public Camera targetCamera;
+
+    private RotationConstraint rotationConstraint;
+
+    void Start()
     {
-        if (cameraTransform == null)
+        if (targetCamera == null)
         {
-            cameraTransform = Camera.main.transform;
+            targetCamera = Camera.main;
         }
-    }
-    void Update()
-    {
-        if (cameraTransform != null)
+
+        rotationConstraint = GetComponent<RotationConstraint>();
+        if (rotationConstraint == null)
         {
-            // Устанавливаем поворот объекта равным повороту камеры
-            transform.rotation = cameraTransform.rotation;
+            rotationConstraint = gameObject.AddComponent<RotationConstraint>();
         }
+
+        rotationConstraint.SetSources(new List<ConstraintSource>());
+
+        ConstraintSource source = new ConstraintSource();
+        source.sourceTransform = targetCamera.transform;
+        source.weight = 1.0f;
+        rotationConstraint.AddSource(source);
+
+        // Активируем ограничение и блокируем дальнейшие изменения источников
+        rotationConstraint.constraintActive = true;
+        rotationConstraint.locked = true;
     }
 }

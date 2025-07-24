@@ -59,17 +59,28 @@ namespace InventorySystem
         public int CountItems(Item item) => _collection.Count;
         public void ThrowItemToWorld(int itemIndex)
         {
-            ItemEntry e = _collection[itemIndex];
-            ItemUtility.CreateAndAttach(transform.position, e);
+            ThrowItemToWorld(itemIndex, 1);
         }
         public void ThrowItemToWorld(int itemIndex, int quantity)
         {
-            ItemEntry old = _collection[itemIndex];
-            ItemEntry newItem = old.Clone();
-            _collection.Reduce(itemIndex, quantity);
-            newItem.quantity = quantity;
+            ItemEntry item = _collection[itemIndex];
+            bool completly = _collection.Reduce(itemIndex, quantity);
 
-            ItemUtility.CreateAndAttach(transform.position, newItem);
+            if (completly)
+            {
+                GameObject go = Instantiate(item.item.Prefab, transform.position, Quaternion.identity);
+                var c = go.GetComponent<WorldItemController>();
+                c.ItemEntry = item;
+            }
+            else
+            {
+                ItemEntry newItem = item.Clone();
+                item.quantity = quantity;
+                GameObject go = Instantiate(item.item.Prefab, transform.position, Quaternion.identity);
+                var c = go.GetComponent<WorldItemController>();
+                c.ItemEntry = newItem;
+            }
+
         }
         public void AddFromWorld(ItemController itemObject)
         {

@@ -13,9 +13,13 @@ public class RotationController : MonoBehaviour
         e.z = 0;
         transform.eulerAngles = e;
     }
-    public void ApplyRotationToPoint(Vector3 point)
+    public void ApplyRotationToPoint(Vector3 point, bool yAxisOnly)
     {
         Vector3 dir = (point - transform.position).normalized;
+        if (yAxisOnly)
+        {
+            dir.y = 0;
+        }
         Quaternion q = Quaternion.LookRotation(dir);
         Vector3 e = q.eulerAngles;
         e.x = 0;

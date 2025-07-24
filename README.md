@@ -7,7 +7,7 @@ Test Readme.
 Краткое описание вашего проекта. Например:  
 **Этот репозиторий содержит...**  
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/ваш-ник/репозиторий/releases)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue)](https://github.com/AndrewReshetnikovCode/Gamlet-Project/releases/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/ваш-ник/репозиторий?style=social)](https://github.com/ваш-ник/репозиторий/stargazers)  
 
